@@ -1,36 +1,36 @@
 import express from "express";
 let UserRoutes = express.Router();
 import { UserController } from "../Controller";
-import { UserAuth, Authorization } from "../Middleware";
+import { AuthenticationMiddleware, AuthorizationMiddleware } from "../Middleware";
 
 // [ + ]After Login this url is used for user
-UserRoutes.get("/profile", UserAuth, UserController.getUserDetails);
-UserRoutes.put("/changePassword", UserAuth, UserController.updatePassword);
-UserRoutes.put("/edit_profile", UserAuth, UserController.updateUserDetails);
+UserRoutes.get("/profile", AuthenticationMiddleware, UserController.getUserDetails);
+UserRoutes.put("/changePassword", AuthenticationMiddleware, UserController.updatePassword);
+UserRoutes.put("/edit_profile", AuthenticationMiddleware, UserController.updateUserDetails);
 
 // [ + ] Admin Credentials
 UserRoutes.get(
   "/admin",
-  UserAuth,
-  Authorization("admin"),
+  AuthenticationMiddleware,
+  AuthorizationMiddleware("admin"),
   UserController.getAllUserDetails
 );
 UserRoutes.get(
   "/admin/user/:id",
-  UserAuth,
-  Authorization("admin"),
+  AuthenticationMiddleware,
+  AuthorizationMiddleware("admin"),
   UserController.getSingleUser
 );
 UserRoutes.put(
   "/admin/user/:id",
-  UserAuth,
-  Authorization("admin"),
+  AuthenticationMiddleware,
+  AuthorizationMiddleware("admin"),
   UserController.updateUserRole
 );
-UserRoutes.delete(
-  "/admin/user/:id",
-  UserAuth,
-  Authorization("admin"),
-  UserController.removeUser
-);
+// UserRoutes.delete(
+//   "/admin/user/:id",
+//   AuthenticationMiddleware,
+//   AuthorizationMiddleware("admin"),
+//   UserController.removeUser
+// );
 export default UserRoutes;

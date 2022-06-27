@@ -1,5 +1,5 @@
 import { JWT_SECRET } from "../../Config";
-import { CompanyModel, TokenModel, UserModel } from "../Models";
+import {  TokenModel, UserModel } from "../Models";
 import { ErrorHandler, SendEmail } from "../Services";
 import jwt from "jsonwebtoken";
 

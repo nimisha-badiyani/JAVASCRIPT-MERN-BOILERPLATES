@@ -5,7 +5,7 @@ import { PORT, CLOUD_NAME, CLOUD_API_KEY, CLOUD_API_SECRET } from "./config";
 import { UserRoutes } from "./Src/Routes";
 import "./Src/Database";
 import cors from "cors";
-import { Error } from "./Src/Middleware";
+import { ErrorMiddleware } from "./Src/Middleware";
 import cookieParser from "cookie-parser";
 app.use(express.json());
 app.use(cookieParser());
@@ -24,7 +24,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api/v1/", UserRoutes);
 
 //* Middleware for Error
-app.use(Error);
+app.use(ErrorMiddleware);
 // ? when we declare any undefine variable then this error occur so we can handle this error here
 process.on("uncaughtException", (error) => {
   consola.error(

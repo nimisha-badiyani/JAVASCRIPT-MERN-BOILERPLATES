@@ -5,7 +5,7 @@ import {
   AWS_BUCKET,
   AWS_SECRET_ACCESS_KEY,
   AWS_REGION,
-} from "./Config";
+} from "../../Config";
 
 // @AWS-CONFIG
 var credentials = {
