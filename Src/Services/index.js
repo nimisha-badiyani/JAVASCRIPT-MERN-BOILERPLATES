@@ -6,3 +6,4 @@ export { default as Cloudinary } from "./Cloudinary";
 export { default as AWSUpload } from "./AWSUpload";
 export { default as Security } from "./Security";
 export { default as SendTextMessage } from "./SendTextMessage";
+export { default as GenerateOTP } from "./GenerateOTP";

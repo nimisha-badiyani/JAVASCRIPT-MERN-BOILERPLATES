@@ -9,7 +9,7 @@ import {
   SendToken,
 } from "../Services";
 import Joi from "joi";
-import cloudinary from 'cloudinary';
+import cloudinary from "cloudinary";
 const UserController = {
   // [ + ] REGISTRATION LOGIC
   async registerUser(req, res, next) {
@@ -30,93 +30,51 @@ const UserController = {
           .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
           .required(),
         confirmPassword: Joi.ref("password"),
-        avatar: Joi.string(),
-        verified: Joi.boolean().default(false),
+        profile_img: Joi.object(),
+        verified: Joi.boolean().default(true),
         role: Joi.string().default("user"),
         status: Joi.string().default("Active"),
         userIp: Joi.string().default("0.0.0.0"),
         userLocation: Joi.string().default("Some Location"),
       });
+
       const { error } = UserValidation.validate(req.body);
       if (error) {
         return next(error);
       }
-
-      if (req.body.avatar) {
-        let myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-          folder: "userProfileImage",
-          width: 150,
-          crop: "scale",
+      let { name, email, password, confirmPassword, userLocation } = req.body;
+      let user;
+      if (req.file.path) {
+        req.file.path = req.file.path.replace("\\", "/");
+        let myCloud = await cloudinary.v2.uploader.upload(req.file.path, {
+          folder: "user_profile_img",
         });
 
-        let { name, email, password } = req.body;
         // check if user in database already
         try {
           const exist = await UserModel.exists({ email: req.body.email });
           if (exist) {
-            return next(new ErrorHandler("This email is already taken", 409));
+            return next(
+              ErrorHandler.alreadyExist("This email is already taken")
+            );
           }
         } catch (err) {
           return next(err);
         }
-        let user = await UserModel.create({
+        user = await UserModel.create({
           name,
           email,
           password,
-          avatar: {
+          profile_img: {
             public_id: myCloud.public_id,
             url: myCloud.secure_url,
           },
+          userLocation,
         });
       }
-      let { name, email, password, userLocation } = req.body;
-      // check if user in database already
-      try {
-        const exist = await UserModel.exists({ email: req.body.email });
-        if (exist) {
-          console.log(exist);
-          return next(new ErrorHandler("This email is already taken", 409));
-        }
-      } catch (err) {
-        return next(err);
-      }
-
-      let user = await UserModel.create({
-        name,
-        email,
-        password,
-        userIp: req.socket.remoteAddress,
-        userLocation,
-      });
-
-      const token = await TokenModel.create({
-        userId: user._id,
-        token: crypto.randomBytes(32).toString("hex"),
-      });
-      const url = `${FRONTEND_URL}/users/${user._id}/verify/${token.token}`;
-
-      const message = `Your Email Verification token is:- ${url} \n\n If you Don't requested this email then ignore it\n\n `;
-      const sendVerifyMail = await SendEmail({
-        email: user.email,
-        subject: `Email Verification`,
-        message,
-      });
-      if (!sendVerifyMail) {
-        return next(
-          new ErrorHandler(
-            "Something Error Occurred Please Try After Some Time",
-            422
-          )
-        );
-      }
-      // SendToken(user, 201, res);
-      res.status(201).json({
-        success: "Pending",
-        message:
-          "An Email send to your account please verify your email address",
-      });
+      SendToken(user, 201, res, "Account Created Successfully");
     } catch (error) {
-      return next(new ErrorHandler(error, 500));
+      return next(ErrorHandler.serverError(error));
     }
   },
 
@@ -328,7 +286,7 @@ const UserController = {
   },
 
   // [ + ] GET USER DETAILS
-  async getUserDetails(req, res, next) {
+  async userprofile_img(req, res, next) {
     try {
       const user = await UserModel.findById(req.user.id);
       if (user.status == "Deactivate") {
@@ -360,7 +318,7 @@ const UserController = {
 
   // [ + ] UPDATE USER PASSWORD
 
-  async updatePassword(req, res, next) {
+  async changePassword(req, res, next) {
     try {
       const UserValidation = Joi.object({
         oldPassword: Joi.string().required().messages({
@@ -465,7 +423,6 @@ const UserController = {
       };
       const userData = await UserModel.findById(req.params.id);
       if (userData.name !== req.body.name) {
-        console.log(userData.name, req.body.name);
         return next(new ErrorHandler("You Can't Change The User Name", 400));
       }
       if (userData.email !== req.body.email) {
@@ -479,7 +436,6 @@ const UserController = {
           )
         );
       }
-      console.log(userData.role, newUserData.user);
       if (userData.role == req.body.role) {
         return next(
           new ErrorHandler(
@@ -507,7 +463,7 @@ const UserController = {
 
   // [ + ] UPDATE USER DETAIL LOGIC
 
-  async updateUserDetails(req, res, next) {
+  async editUserprofile_img(req, res, next) {
     try {
       if (!isValidObjectId(req.params.id)) {
         res.status(422).json({
@@ -525,7 +481,7 @@ const UserController = {
         email: Joi.string().email().trim().messages({
           "string.base": `User Email should be a type of 'text'`,
         }),
-        avatar: Joi.string(),
+        profile_img: Joi.string(),
       });
       const { error } = UserValidation.validate(req.body);
       if (error) {
@@ -543,16 +499,19 @@ const UserController = {
         name: req.body.name,
         email: req.body.email,
       };
-      if (req.body.avatar !== undefined && req.body.avatar !== "") {
+      if (req.body.profile_img !== undefined && req.body.profile_img !== "") {
         const user = await UserModel.findById(req.user.id);
-        const imageId = user.avatar.public_id;
+        const imageId = user.profile_img.public_id;
         await cloudinary.v2.uploader.destroy(imageId);
-        const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-          folder: "avatars",
-          width: 150,
-          crop: "scale",
-        });
-        newUserData.avatar = {
+        const myCloud = await cloudinary.v2.uploader.upload(
+          req.body.profile_img,
+          {
+            folder: "profile_imgs",
+            width: 150,
+            crop: "scale",
+          }
+        );
+        newUserData.profile_img = {
           public_id: myCloud.public_id,
           url: myCloud.secure_url,
         };
@@ -576,10 +535,10 @@ const UserController = {
 
   // [ + ] DELETE USER LOGIC
 
-  async deleteAccountPermenantlyUser(req, res, next) {
+  async deactivateAccount(req, res, next) {
     try {
       const user = await UserModel.findById(req.user.id);
-      console.log(user);
+
       if (!user) {
         return next(
           new ErrorHandler(`User does not exist with Id: ${req.user.id}`, 400)
@@ -628,7 +587,7 @@ const UserController = {
 
   // [ > ] BLOCK USER  BY ADMIN LOGIC
 
-  async blockUserAdmin(req, res, next) {
+  async blockUser(req, res, next) {
     try {
       if (!isValidObjectId(req.params.id)) {
         res.status(422).json({
@@ -639,7 +598,7 @@ const UserController = {
         });
       }
       const user = await UserModel.findById(req.params.id);
-      console.log(user);
+
       if (!user) {
         return next(
           new ErrorHandler(`User does not exist with Id: ${req.params.id}`, 400)
@@ -674,7 +633,7 @@ const UserController = {
 
   // [ > ] Delete User - Admin
 
-  async deleteUserAdmin(req, res, next) {
+  async removeUser(req, res, next) {
     try {
       if (!isValidObjectId(req.params.id)) {
         res.status(422).json({

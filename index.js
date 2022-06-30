@@ -2,7 +2,7 @@
 import express from "express";
 const app = express();
 import { PORT, CLOUD_NAME, CLOUD_API_KEY, CLOUD_API_SECRET } from "./config";
-import { UserRoutes } from "./Src/Routes";
+import { AuthenticationRoutes, UserRoutes } from "./Src/Routes";
 import "./Src/Database";
 import cors from "cors";
 import { ErrorMiddleware } from "./Src/Middleware";
@@ -21,6 +21,7 @@ import bodyParser from "body-parser";
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // todo: All Routes Declare Here
+app.use("/api/v1/auth", AuthenticationRoutes);
 app.use("/api/v1/", UserRoutes);
 
 //* Middleware for Error

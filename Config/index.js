@@ -11,6 +11,7 @@ export const {
   SMTP_SERVICE,
   SMTP_HOST,
   SMTP_PORT,
+  SMS_API_KEY,
   SMTP_PASS,
   FRONTEND_URL,
   AWS_BUCKET,

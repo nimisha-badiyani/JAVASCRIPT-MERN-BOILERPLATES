@@ -21,7 +21,7 @@ const s3 = new AWS.S3();
 const userData = {
   _id:"3144dd484d6a5d789d4as5d",
   name:"Test User",
-  profileImage:"profileImage/filekey",
+  profile_imgImage:"profile_imgImage/filekey",
   BlogImage:"blogimage/filekey",
   FeaturedImages:"featuresimg/filekey",
   Document:"Doc/filekey"
@@ -30,7 +30,7 @@ const userData = {
 So our data after insertion looklike this and we have to find all in specific user folder and we have create 
 
 
-user_id/profileImage/key
+user_id/profile_imgImage/key
 user_id/BlogImage/key
 user_id/FeaturedImages/key
 user_id/Document/key

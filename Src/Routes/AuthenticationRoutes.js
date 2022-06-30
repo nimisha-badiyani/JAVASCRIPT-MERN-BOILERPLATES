@@ -1,10 +1,15 @@
 import express from "express";
 let AuthenticationRoutes = express.Router();
 import { UserController } from "../Controller";
+import { Upload } from "../Middleware";
 
 // [ + ] User Routes
 // AuthenticationRoutes.post("/test",UserController.testing)
-AuthenticationRoutes.post("/register", UserController.registerUser);
+AuthenticationRoutes.post(
+  "/register",
+  Upload.single("profile_img"),
+  UserController.registerUser
+);
 AuthenticationRoutes.post(
   "/users/:id/verify/:token",
   UserController.verifyEmail

@@ -23,17 +23,17 @@ const UserSchema = new mongoose.Schema({
     minLength: [4, "Password should not be greater than 4 characters"],
     select: false,
   },
-  avatar: {
+  profile_img: {
     public_id: {
       type: String,
       required: true,
-      default: "userProfileImage/tzsmxrevyes1xsuyujlk",
+      default: "userprofile_imgImage/tzsmxrevyes1xsuyujlk",
     },
     url: {
       type: String,
       required: true,
       default:
-        "https://res.cloudinary.com/dm3gs2s0h/image/upload/v1650136405/userProfileImage/tzsmxrevyes1xsuyujlk.png",
+        "https://res.cloudinary.com/dm3gs2s0h/image/upload/v1650136405/userprofile_imgImage/tzsmxrevyes1xsuyujlk.png",
     },
   },
   verified: {
