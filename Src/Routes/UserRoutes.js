@@ -11,7 +11,7 @@ import {
 UserRoutes.get(
   "/profile_img",
   AuthenticationMiddleware,
-  UserController.userprofile_img
+  UserController.userProfile
 );
 UserRoutes.put(
   "/changePassword",
@@ -19,10 +19,10 @@ UserRoutes.put(
   UserController.changePassword
 );
 UserRoutes.put(
-  "/edit_profile_img",
+  "/edit_profile",
   AuthenticationMiddleware,
   Upload.single("profile_img"),
-  UserController.editUserprofile_img
+  UserController.editUserprofile
 );
 UserRoutes.put(
   "/deactivate",

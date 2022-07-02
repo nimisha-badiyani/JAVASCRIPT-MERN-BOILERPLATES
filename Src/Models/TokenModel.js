@@ -5,10 +5,11 @@ const TokenSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     required: true,
     ref: "user",
-    unique: true,
   },
   token: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now, expires: 1200 }, // 20 minutes
+  otp: { type: String },
+  createdAt: { type: Date, default: Date.now }, // 20 minutes
+  expiresAt: { type: Date, expires: 1200 },
 });
 
 let TokenModel = mongoose.model("TokenVerification", TokenSchema);

@@ -1,7 +1,7 @@
 import { DEBUG_MODE } from "../../Config";
 import { ValidationError } from "joi";
 import { ErrorHandler } from "../Services";
-
+import consola from "consola";
 const ErrorMiddleware = (err, req, res, next) => {
   let statusCode = 500;
   let errdata = {
@@ -22,6 +22,7 @@ const ErrorMiddleware = (err, req, res, next) => {
       data: [],
       message: err.message,
     };
+    consola.error(err.message);
   }
 
   if (err instanceof ErrorHandler) {
@@ -32,6 +33,7 @@ const ErrorMiddleware = (err, req, res, next) => {
       data: [],
       message: err.message,
     };
+    consola.error(err.message);
   }
   return res.status(statusCode).json(errdata);
 };

@@ -7,14 +7,31 @@ import {
   SendTextMessage,
   Security,
   SendToken,
+  SuccessHandler,
 } from "../Services";
 import Joi from "joi";
 import cloudinary from "cloudinary";
+import bcrypt from "bcryptjs";
+import CheckMongoId from "../Services/CheckMongoID";
+
+/* 
+
+Remaining
+
+Cloudinary Image Upload
+Seprate Image/Doc Uploading Module
+Add Enc Dec
+Comment AWS Upload logics
+Test All API
+Check All Validations
+
+*/
+
 const UserController = {
   // [ + ] REGISTRATION LOGIC
   async registerUser(req, res, next) {
     try {
-      const UserValidation = Joi.object({
+      const UserRegistration = Joi.object({
         name: Joi.string().trim().min(3).max(30).required().messages({
           "string.base": `User Name should be a type of 'text'`,
           "string.empty": `User Name cannot be an empty field`,
@@ -27,10 +44,11 @@ const UserController = {
           "any.required": `User Email is a required field`,
         }),
         password: Joi.string()
-          .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
+          .pattern(new RegExp("^[a-zA-Z0-9#?!@$%^&*-]{8,30}$"))
           .required(),
-        confirmPassword: Joi.ref("password"),
-        profile_img: Joi.object(),
+        // confirmPassword: Joi.ref("password"),
+        // For Custom Message we are using this
+        confirmPassword: Joi.string().required(),
         verified: Joi.boolean().default(true),
         role: Joi.string().default("user"),
         status: Joi.string().default("Active"),
@@ -38,101 +56,76 @@ const UserController = {
         userLocation: Joi.string().default("Some Location"),
       });
 
-      const { error } = UserValidation.validate(req.body);
+      const { error } = UserRegistration.validate(req.body);
       if (error) {
         return next(error);
       }
       let { name, email, password, confirmPassword, userLocation } = req.body;
-      let user;
-      if (req.file.path) {
-        req.file.path = req.file.path.replace("\\", "/");
-        let myCloud = await cloudinary.v2.uploader.upload(req.file.path, {
-          folder: "user_profile_img",
-        });
 
-        // check if user in database already
-        try {
-          const exist = await UserModel.exists({ email: req.body.email });
-          if (exist) {
-            return next(
-              ErrorHandler.alreadyExist("This email is already taken")
-            );
-          }
-        } catch (err) {
-          return next(err);
+      if (req.body.password) {
+        if (req.body.password !== req.body.confirmPassword) {
+          return next(
+            ErrorHandler.unAuthorized(
+              "Confirm Password & Password Must Be Same"
+            )
+          );
         }
-        user = await UserModel.create({
-          name,
-          email,
-          password,
-          profile_img: {
-            public_id: myCloud.public_id,
-            url: myCloud.secure_url,
-          },
-          userLocation,
-        });
       }
+
+      try {
+        const exist = await UserModel.exists({ email: req.body.email });
+        if (exist) {
+          return next(ErrorHandler.alreadyExist("This email is already taken"));
+        }
+      } catch (err) {
+        return next(err);
+      }
+      let user = await UserModel.create({
+        name,
+        email,
+        password,
+        userLocation,
+      });
       SendToken(user, 201, res, "Account Created Successfully");
     } catch (error) {
       return next(ErrorHandler.serverError(error));
     }
   },
 
-  // [ + ] VERIFICATION EMAIL LOGIC
-  async verifyEmail(req, res, next) {
-    try {
-      const user = await UserModel.findOne({ _id: req.params.id });
-      if (!user) {
-        return next(new ErrorHandler("Invalid Verification Link", 400));
-      }
-
-      const token = await TokenModel.findOne({
-        userId: user._id,
-        token: req.params.token,
-      });
-      if (!token) {
-        return next(new ErrorHandler("Invalid Verification Link", 400));
-      }
-
-      await UserModel.findByIdAndUpdate(
-        req.params.id,
-        {
-          verified: true,
-        },
-        { new: true, runValidators: true, useFindAndModify: false }
-      );
-      await token.remove();
-
-      res.status(200).send({
-        success: true,
-        message: "Email Verification Successfully",
-      });
-    } catch (error) {
-      return next(new ErrorHandler(error, 500));
-    }
-  },
-
   // [ + ] LOGIN USER LOGIC
   async login(req, res, next) {
     try {
-      const { email, password } = req.body;
-      if (!email || !password) {
-        return next(new ErrorHandler("Please Enter Email & Password", 400));
+      const LoginSchema = Joi.object({
+        email: Joi.string().email().trim().required().messages({
+          "string.base": `User Email should be a type of 'text'`,
+          "string.empty": `User Email cannot be an empty field`,
+          "any.required": `User Email is a required field`,
+        }),
+        password: Joi.string()
+          .pattern(new RegExp("^[a-zA-Z0-9#?!@$%^&*-]{8,30}$"))
+          .required(),
+        userIp: Joi.string().default("0.0.0.0"),
+        userLocation: Joi.string().default("Some Location"),
+      });
+      const { error } = LoginSchema.validate(req.body);
+      if (error) {
+        return next(error);
       }
+      const { email, password } = req.body;
       const user = await UserModel.findOne({ email: email }).select(
         "+password"
       );
       if (!user) {
-        return next(new ErrorHandler("Invalid Email and password", 400));
-      }
-
-      if (!user.verified) {
-        return next(new ErrorHandler("please verify your email address", 400));
+        return next(
+          new ErrorHandler.wrongCredentials("Invalid Email and password")
+        );
       }
 
       const isPasswordMatched = await user.comparePassword(password);
       if (!isPasswordMatched) {
-        return next(new ErrorHandler("Invalid Email and password", 400));
+        return next(
+          ErrorHandler.wrongCredentials("Invalid Email and password")
+        );
       }
 
       if (user.status === "Deactivate") {
@@ -144,16 +137,14 @@ const UserController = {
         });
         if (!sendActivateAccountInfo) {
           return next(
-            new ErrorHandler(
-              "Something Error Occurred Please Try After Some Time",
-              422
+            ErrorHandler.serverError(
+              "Something Error Occurred Please Try After Some Time"
             )
           );
         }
         return next(
-          new ErrorHandler(
-            "It Seem's You have deleted Your Account Please Check Your Mail For More Details",
-            422
+          ErrorHandler.notFound(
+            "It Seem's You have deleted Your Account Please Check Your Mail For More Details"
           )
         );
       }
@@ -167,21 +158,18 @@ const UserController = {
         });
         if (!sendActivateAccountInfo) {
           return next(
-            new ErrorHandler(
-              "Something Error Occurred Please Try After Some Time",
-              422
+            ErrorHandler.serverError(
+              "Something Error Occurred Please Try After Some Time"
             )
           );
         }
         return next(
-          new ErrorHandler(
-            "It Seem's Administrator have Blocked Your Account Please Check Your Mail For More Details",
-            422
+          ErrorHandler.notFound(
+            "It Seem's Administrator have Blocked Your Account Please Check Your Mail For More Details"
           )
         );
       }
 
-      const token = user.getJWTToken();
       let message = `Someone Is Login From Your Account at User IP:- ${req.socket.remoteAddress} Location:"User Location Here" ${user.userLocation}`;
 
       const AccountLogin = await SendEmail({
@@ -191,15 +179,14 @@ const UserController = {
       });
       if (!AccountLogin) {
         return next(
-          new ErrorHandler(
-            "Something Error Occurred Please Try After Some Time",
-            422
+          ErrorHandler.serverError(
+            "Something Error Occurred Please Try After Some Time"
           )
         );
       }
       SendToken(user, 200, res);
     } catch (error) {
-      return next(new ErrorHandler(error, 500));
+      return next(ErrorHandler.serverError(error));
     }
   },
 
@@ -221,9 +208,22 @@ const UserController = {
 
   // [ + ] FORGOT PASSWORD USER LOGIC
   async forgotPassword(req, res, next) {
+    const forgotPasswordSchema = Joi.object({
+      email: Joi.string().email().trim().required().messages({
+        "string.base": `User Email should be a type of 'text'`,
+        "string.empty": `User Email cannot be an empty field`,
+        "any.required": `User Email is a required field`,
+      }),
+      userIp: Joi.string().default("0.0.0.0"),
+      userLocation: Joi.string().default("Some Location"),
+    });
+    const { error } = forgotPasswordSchema.validate(req.body);
+    if (error) {
+      return next(error);
+    }
     const user = await UserModel.findOne({ email: req.body.email });
     if (!user) {
-      return next(new ErrorHandler("User Not Found", 404));
+      return next(ErrorHandler.notFound("User Not Found"));
     }
     const resetToken = user.getResetPasswordToken();
     await user.save({ validateBeforeSave: false });
@@ -246,13 +246,36 @@ const UserController = {
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
-      return next(new ErrorHandler(error.message, 500));
+      return next(ErrorHandler.serverError(error));
     }
   },
 
   // [ + ] RESET PASSWORD USER LOGIC
   async resetPassword(req, res, next) {
     try {
+      const ResetSchema = Joi.object({
+        password: Joi.string()
+          .pattern(new RegExp("^[a-zA-Z0-9#?!@$%^&*-]{8,30}$"))
+          .required(),
+        // confirmPassword: Joi.ref("password"),
+        // For Custom Message we are using this
+        confirmPassword: Joi.string().required(),
+        userIp: Joi.string().default("0.0.0.0"),
+        userLocation: Joi.string().default("Some Location"),
+      });
+      const { error } = ResetSchema.validate(req.body);
+      if (error) {
+        return next(error);
+      }
+      if (req.body.password || req.body.confirmPassword) {
+        if (req.body.password !== req.body.confirmPassword) {
+          return next(
+            ErrorHandler.unAuthorized(
+              "Confirm Password & Password Must Be Same"
+            )
+          );
+        }
+      }
       const resetPasswordToken = crypto
         .createHash("sha256")
         .update(req.params.token)
@@ -260,46 +283,45 @@ const UserController = {
       const user = await UserModel.findOne({
         resetPasswordToken,
         resetPasswordExpire: { $gt: Date.now() },
-
-        // [ + ]
       });
       if (!user) {
         return next(
-          new ErrorHandler(
-            "Reset password token is Invalid or has been expired",
-            404
+          ErrorHandler.wrongCredentials(
+            "Reset password token is Invalid or has been expired"
           )
         );
-      }
-
-      if (req.body.password !== req.body.confirmPassword) {
-        return next(new ErrorHandler("Password doesn't match", 400));
       }
       user.password = req.body.password;
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save();
-      SendToken(user, 200, res);
+      SuccessHandler(
+        200,
+        user,
+        "Your Password is Reset Successfully.Now, Please Login",
+        res
+      );
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      return next(ErrorHandler.serverError(error));
     }
   },
 
   // [ + ] GET USER DETAILS
-  async userprofile_img(req, res, next) {
+  async userProfile(req, res, next) {
     try {
       const user = await UserModel.findById(req.user.id);
       if (user.status == "Deactivate") {
-        return next(
+        next(
           new ErrorHandler(
             "It Seem's You have deleted Your Account Please Check Your Mail For More Details",
             422
           )
         );
+        return SuccessHandler(200, "", "User Account Deactivate", res);
       }
       SuccessHandler(200, user, "User Details Display Successfully", res);
     } catch (error) {
-      return new ErrorHandler(error, 500);
+      return next(ErrorHandler.serverError(error));
     }
   },
 
@@ -312,7 +334,7 @@ const UserController = {
       ).sort({ createdAt: -1 });
       SuccessHandler(200, users, "User Details Display Successfully", res);
     } catch (error) {
-      return new ErrorHandler(error, 500);
+      return next(ErrorHandler.serverError(error));
     }
   },
 
@@ -337,22 +359,42 @@ const UserController = {
         return next(error);
       }
 
+      if (req.body.newPassword || req.body.confirmPassword) {
+        if (req.body.newPassword !== req.body.confirmPassword) {
+          return next(
+            ErrorHandler.unAuthorized(
+              "Confirm Password & Password Must Be Same"
+            )
+          );
+        }
+      }
       const user = await UserModel.findById(req.user.id).select("+password");
-      const isPasswordMatched = await user.comparePassword(
-        req.body.oldPassword
+      let oldPasswordTest = await bcrypt.compare(
+        req.body.newPassword,
+        user.password
       );
-      if (!isPasswordMatched) {
-        return next(new ErrorHandler("Old Password Is Incorrect", 400));
+      if (!oldPasswordTest) {
+        return next(ErrorHandler.notFound("Old Password Is Incorrect"));
       }
-      if (req.body.newPassword !== req.body.confirmPassword) {
-        return next(new ErrorHandler("Password Doesn't match", 400));
-      }
+      // if (req.body.newPassword) {
+      //   let newPassword = req.body.newPassword;
+      //   newPassword = await bcrypt.hash(newPassword, 10);
+      //   let samePassword = await bcrypt.compare(newPassword, user.password);
+      //   if (samePassword) {
+      //     return next(
+      //       ErrorHandler.alreadyExist(
+      //         "You Can't use old password, please enter new password"
+      //       )
+      //     );
+      //   }
+      // }
+
       user.password = req.body.newPassword;
       user.save();
       SendToken(user, 200, res);
       SuccessHandler(200, user, "Password Change Successfully", res);
     } catch (error) {
-      return new ErrorHandler(error, 500);
+      return next(ErrorHandler.serverError(error));
     }
   },
 
@@ -360,13 +402,9 @@ const UserController = {
 
   async getSingleUser(req, res, next) {
     try {
-      if (!isValidObjectId(req.params.id)) {
-        res.status(422).json({
-          success: false,
-          code: 422,
-          data: "",
-          message: `${req.params.id} is not valid MongoDB ID`,
-        });
+      const testId = CheckMongoId(req.params.id);
+      if (!testId) {
+        return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
       }
       const user = await UserModel.findById(req.params.id);
 
@@ -381,22 +419,17 @@ const UserController = {
         user,
       });
     } catch (error) {
-      return new ErrorHandler(error, 500);
+      return next(ErrorHandler.serverError(error));
     }
   },
 
   // [ + ] UPDATE USER ROLE LOGIC
 
   async updateUserRole(req, res, next) {
-    if (!isValidObjectId(req.params.id)) {
-      res.status(422).json({
-        success: false,
-        code: 422,
-        data: "",
-        message: `${req.params.id} is not valid MongoDB ID`,
-      });
+    const testId = CheckMongoId(req.params.id);
+    if (!testId) {
+      return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
     }
-
     const UserValidation = Joi.object({
       name: Joi.string().trim().min(3).max(30).required().messages({
         "string.base": `User Name should be a type of 'text'`,
@@ -457,21 +490,17 @@ const UserController = {
 
       SuccessHandler(200, updatedData, "User Role Updated", res);
     } catch (error) {
-      return new ErrorHandler(error, 500);
+      return next(ErrorHandler.serverError(error));
     }
   },
 
   // [ + ] UPDATE USER DETAIL LOGIC
 
-  async editUserprofile_img(req, res, next) {
+  async editUserprofile(req, res, next) {
     try {
-      if (!isValidObjectId(req.params.id)) {
-        res.status(422).json({
-          success: false,
-          code: 422,
-          data: "",
-          message: `${req.params.id} is not valid MongoDB ID`,
-        });
+      const testId = CheckMongoId(req.params.id);
+      if (!testId) {
+        return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
       }
       const UserValidation = Joi.object({
         name: Joi.string().trim().min(3).max(30).messages({
@@ -529,7 +558,7 @@ const UserController = {
 
       next();
     } catch (error) {
-      return new ErrorHandler(error, 500);
+      return next(ErrorHandler.serverError(error));
     }
   },
 
@@ -581,7 +610,7 @@ const UserController = {
         message: "User Account Removed Successfully",
       });
     } catch (error) {
-      return new ErrorHandler(error, 500);
+      return next(ErrorHandler.serverError(error));
     }
   },
 
@@ -589,13 +618,9 @@ const UserController = {
 
   async blockUser(req, res, next) {
     try {
-      if (!isValidObjectId(req.params.id)) {
-        res.status(422).json({
-          success: false,
-          code: 422,
-          data: "",
-          message: `${req.params.id} is not valid MongoDB ID`,
-        });
+      const testId = CheckMongoId(req.params.id);
+      if (!testId) {
+        return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
       }
       const user = await UserModel.findById(req.params.id);
 
@@ -627,7 +652,7 @@ const UserController = {
         message: "User Blocked Successfully By Admin",
       });
     } catch (error) {
-      return new ErrorHandler(error, 500);
+      return next(ErrorHandler.serverError(error));
     }
   },
 
@@ -635,13 +660,9 @@ const UserController = {
 
   async removeUser(req, res, next) {
     try {
-      if (!isValidObjectId(req.params.id)) {
-        res.status(422).json({
-          success: false,
-          code: 422,
-          data: "",
-          message: `${req.params.id} is not valid MongoDB ID`,
-        });
+      const testId = CheckMongoId(req.params.id);
+      if (!testId) {
+        return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
       }
       const user = await UserModel.findById(req.params.id);
       if (!user) {
@@ -657,7 +678,7 @@ const UserController = {
         message: "User Deleted Successfully",
       });
     } catch (error) {
-      return new ErrorHandler(error, 500);
+      return next(ErrorHandler.serverError(error));
     }
   },
 };

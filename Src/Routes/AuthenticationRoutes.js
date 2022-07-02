@@ -10,10 +10,10 @@ AuthenticationRoutes.post(
   Upload.single("profile_img"),
   UserController.registerUser
 );
-AuthenticationRoutes.post(
-  "/users/:id/verify/:token",
-  UserController.verifyEmail
-);
+// AuthenticationRoutes.post(
+//   "/users/:id/verify/:token",
+//   UserController.verifyEmail
+// );
 AuthenticationRoutes.post("/login", UserController.login);
 AuthenticationRoutes.post("/password/forgot", UserController.forgotPassword);
 AuthenticationRoutes.put(

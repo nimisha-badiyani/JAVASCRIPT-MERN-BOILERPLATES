@@ -27,18 +27,18 @@ const UserSchema = new mongoose.Schema({
     public_id: {
       type: String,
       required: true,
-      default: "userprofile_imgImage/tzsmxrevyes1xsuyujlk",
+      default: "userImage/tzsmxrevyes1xsuyujlk",
     },
     url: {
       type: String,
       required: true,
       default:
-        "https://res.cloudinary.com/dm3gs2s0h/image/upload/v1650136405/userprofile_imgImage/tzsmxrevyes1xsuyujlk.png",
+        "https://res.cloudinary.com/dm3gs2s0h/image/upload/v1650136405/userImage/tzsmxrevyes1xsuyujlk.png",
     },
   },
   verified: {
     type: Boolean,
-    default: false,
+    default: true,
   },
   role: {
     type: String,

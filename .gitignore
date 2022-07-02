@@ -1,4 +1,6 @@
+yarn-error.log
+Config.env
 node_modules
 package-lock.json
 yarn.lock
-Config.env
+yarn-error.log

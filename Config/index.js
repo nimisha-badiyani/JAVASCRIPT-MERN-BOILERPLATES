@@ -23,4 +23,6 @@ export const {
   CLOUD_API_SECRET,
   CLOUDINARY_URL,
   ENC_DEC_KEY,
+  VONAGE_API_KEY,
+  VONAGE_API_SECRET,
 } = process.env;
