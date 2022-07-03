@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 const AuthenticationMiddleware = async (req, res, next) => {
   try {
     let authToken = req.headers.authorization || req.cookies.token;
-    console.log(authToken);
+   
     if (!authToken) {
       // authToken = ;
       return next(

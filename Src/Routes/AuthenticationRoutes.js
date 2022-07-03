@@ -4,16 +4,7 @@ import { UserController } from "../Controller";
 import { Upload } from "../Middleware";
 
 // [ + ] User Routes
-// AuthenticationRoutes.post("/test",UserController.testing)
-AuthenticationRoutes.post(
-  "/register",
-  Upload.single("profile_img"),
-  UserController.registerUser
-);
-// AuthenticationRoutes.post(
-//   "/users/:id/verify/:token",
-//   UserController.verifyEmail
-// );
+AuthenticationRoutes.post("/register", UserController.registerUser);
 AuthenticationRoutes.post("/login", UserController.login);
 AuthenticationRoutes.post("/password/forgot", UserController.forgotPassword);
 AuthenticationRoutes.put(

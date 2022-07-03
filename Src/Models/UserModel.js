@@ -24,6 +24,14 @@ const UserSchema = new mongoose.Schema({
     select: false,
   },
   profile_img: {
+    fileName: {
+      type: String,
+      required: true,
+    },
+    fileSize: {
+      type: String,
+      required: true,
+    },
     public_id: {
       type: String,
       required: true,

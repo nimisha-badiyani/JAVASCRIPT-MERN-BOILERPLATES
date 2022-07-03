@@ -9,7 +9,7 @@ import {
 
 // [ + ]After Login this url is used for user
 UserRoutes.get(
-  "/profile_img",
+  "/profile",
   AuthenticationMiddleware,
   UserController.userProfile
 );
@@ -18,6 +18,18 @@ UserRoutes.put(
   AuthenticationMiddleware,
   UserController.changePassword
 );
+UserRoutes.post(
+  "/profile_image",
+  AuthenticationMiddleware,
+  Upload.single("profile_img"),
+  UserController.uploadProfileImage
+);
+UserRoutes.put(
+  "/changePassword",
+  AuthenticationMiddleware,
+  UserController.changePassword
+);
+
 UserRoutes.put(
   "/edit_profile",
   AuthenticationMiddleware,

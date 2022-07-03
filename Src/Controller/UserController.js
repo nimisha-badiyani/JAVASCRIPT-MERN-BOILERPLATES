@@ -8,22 +8,23 @@ import {
   Security,
   SendToken,
   SuccessHandler,
+  CheckMongoID,
 } from "../Services";
 import Joi from "joi";
 import cloudinary from "cloudinary";
 import bcrypt from "bcryptjs";
-import CheckMongoId from "../Services/CheckMongoID";
+import crypto from "crypto";
+// import CheckMongoID from "../Services/CheckMongoID";
+import { FRONTEND_URL } from "../../Config";
 
 /* 
 
 Remaining
 
-Cloudinary Image Upload
-Seprate Image/Doc Uploading Module
-Add Enc Dec
-Comment AWS Upload logics
-Test All API
-Check All Validations
+done Cloudinary Image Upload
+done Seprate Image/Doc Uploading Module
+
+
 
 */
 
@@ -184,7 +185,7 @@ const UserController = {
           )
         );
       }
-      SendToken(user, 200, res);
+      SendToken(user, 200, res, "Login Successfully");
     } catch (error) {
       return next(ErrorHandler.serverError(error));
     }
@@ -203,6 +204,27 @@ const UserController = {
       });
     } catch (error) {
       res.status(500).json({ success: false, message: error });
+    }
+  },
+
+  // [ + ] Upload Profile Picture
+  async uploadProfileImage(req, res, next) {
+    try {
+      const user = await UserModel.findById(req.user.id);
+      req.file.path = req.file.path.replace("\\", "/");
+      let myCloud = await Cloudinary.UploadFile(
+        req.file.path,
+        `${user.id}/profile`
+      );
+      let fileSize = await Cloudinary.fileSizeConversion(req.file.size);
+      user.profile_img.fileName = req.file.filename;
+      user.profile_img.fileSize = fileSize;
+      user.profile_img.public_id = myCloud.public_id;
+      user.profile_img.url = myCloud.url;
+      user.save();
+      SuccessHandler(200, user, "User Profile Uploaded Successfully", res);
+    } catch (error) {
+      return next(ErrorHandler.serverError(error));
     }
   },
 
@@ -276,6 +298,7 @@ const UserController = {
           );
         }
       }
+
       const resetPasswordToken = crypto
         .createHash("sha256")
         .update(req.params.token)
@@ -283,13 +306,26 @@ const UserController = {
       const user = await UserModel.findOne({
         resetPasswordToken,
         resetPasswordExpire: { $gt: Date.now() },
-      });
+      }).select("+password");
+      console.log(user);
       if (!user) {
         return next(
           ErrorHandler.wrongCredentials(
             "Reset password token is Invalid or has been expired"
           )
         );
+      }
+      if (req.body.password) {
+        let newPassword = req.body.password;
+        let result = await bcrypt.hash(newPassword, 10);
+        let samePassword = await bcrypt.compare(result, user.password);
+        if (samePassword) {
+          return next(
+            ErrorHandler.alreadyExist(
+              "You Can't use old password, please enter new password"
+            )
+          );
+        }
       }
       user.password = req.body.password;
       user.resetPasswordToken = undefined;
@@ -402,7 +438,7 @@ const UserController = {
 
   async getSingleUser(req, res, next) {
     try {
-      const testId = CheckMongoId(req.params.id);
+      const testId = CheckMongoID(req.params.id);
       if (!testId) {
         return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
       }
@@ -426,7 +462,7 @@ const UserController = {
   // [ + ] UPDATE USER ROLE LOGIC
 
   async updateUserRole(req, res, next) {
-    const testId = CheckMongoId(req.params.id);
+    const testId = CheckMongoID(req.params.id);
     if (!testId) {
       return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
     }
@@ -498,7 +534,7 @@ const UserController = {
 
   async editUserprofile(req, res, next) {
     try {
-      const testId = CheckMongoId(req.params.id);
+      const testId = CheckMongoID(req.params.id);
       if (!testId) {
         return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
       }
@@ -614,20 +650,18 @@ const UserController = {
     }
   },
 
-  // [ > ] BLOCK USER  BY ADMIN LOGIC
+  // [ + ] BLOCK USER  BY ADMIN LOGIC
 
   async blockUser(req, res, next) {
     try {
-      const testId = CheckMongoId(req.params.id);
+      const testId = CheckMongoID(req.params.id);
       if (!testId) {
         return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
       }
       const user = await UserModel.findById(req.params.id);
 
       if (!user) {
-        return next(
-          new ErrorHandler(`User does not exist with Id: ${req.params.id}`, 400)
-        );
+        return next(ErrorHandler.notFound(`User Not Found`));
       }
 
       let userStatus = user.status;
@@ -656,11 +690,11 @@ const UserController = {
     }
   },
 
-  // [ > ] Delete User - Admin
+  // [ + ] Delete User - Admin
 
   async removeUser(req, res, next) {
     try {
-      const testId = CheckMongoId(req.params.id);
+      const testId = CheckMongoID(req.params.id);
       if (!testId) {
         return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
       }
