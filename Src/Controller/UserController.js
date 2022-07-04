@@ -14,19 +14,7 @@ import Joi from "joi";
 import cloudinary from "cloudinary";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-// import CheckMongoID from "../Services/CheckMongoID";
 import { FRONTEND_URL } from "../../Config";
-
-/* 
-
-Remaining
-
-done Cloudinary Image Upload
-done Seprate Image/Doc Uploading Module
-
-
-
-*/
 
 const UserController = {
   // [ + ] REGISTRATION LOGIC
@@ -134,7 +122,10 @@ const UserController = {
         const sendActivateAccountInfo = await SendEmail({
           email: user.email,
           subject: `Reactivate Your Account`,
-          message,
+          templateName: "deactivateAccount",
+          context: {
+            username: user.name,
+          },
         });
         if (!sendActivateAccountInfo) {
           return next(
@@ -154,8 +145,11 @@ const UserController = {
         let message = `Administrator Have Blocked Your Account Because Some Inappropriate Activity Has Done From Your Account`;
         const sendActivateAccountInfo = await SendEmail({
           email: user.email,
-          subject: `Terms & Conditions`,
-          message,
+          subject: `Reactivate Your Account`,
+          templateName: "deactivateAccount",
+          context: {
+            username: user.username,
+          },
         });
         if (!sendActivateAccountInfo) {
           return next(

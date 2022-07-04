@@ -1,4 +1,6 @@
 import nodeMailer from "nodemailer";
+import path from "path";
+import hbs from "nodemailer-express-handlebars";
 import {
   SMTP_MAIL,
   SMTP_SERVICE,
@@ -8,7 +10,6 @@ import {
 } from "../../Config";
 import { ErrorHandler } from ".";
 const sendEmail = async (options) => {
-  //   const accessToken = await OAuth2Client.getAccessToken();
   try {
     const transporter = nodeMailer.createTransport({
       host: SMTP_HOST,
@@ -21,15 +22,26 @@ const sendEmail = async (options) => {
         pass: SMTP_PASS,
       },
     });
+    const handlerbarsOption = {
+      viewEngine: {
+        extName: ".html",
+        partialsDir: path.resolve("./Src/Templates"),
+        defaultLayout: false,
+      },
+      viewPath: path.resolve("./Src/Templates"),
+      extName: ".handlebars",
+    };
+    transporter.use("compile", hbs(handlerbarsOption));
     const mailOptions = {
       from: SMTP_MAIL,
       to: options.email,
       subject: options.subject,
-      text: options.message,
+      template: options.templateName,
+      context: options.context,
     };
     return await transporter.sendMail(mailOptions);
   } catch (error) {
-    return new ErrorHandler(error.message, 500);
+    return ErrorHandler.serverError(error.message, 500);
   }
 };
 export default sendEmail;

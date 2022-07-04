@@ -20,7 +20,7 @@
         ></xml
       >
     <![endif]-->
-    <title>Reset your Password</title>
+    <title>Verify Email Address</title>
     <link
       href="https://fonts.googleapis.com/css?family=Montserrat:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700"
       rel="stylesheet"
@@ -42,6 +42,9 @@
           padding-top: 32px !important;
           padding-bottom: 32px !important;
         }
+        .sm-leading-32 {
+          line-height: 32px !important;
+        }
       }
     </style>
   </head>
@@ -62,12 +65,12 @@
         display: none;
       "
     >
-      A request to reset password was received from your PixInvent Account
+      Please verify your email address
     </div>
     <div
       role="article"
       aria-roledescription="email"
-      aria-label="Reset your Password"
+      aria-label="Verify Email Address"
       lang="en"
       style="
         font-family: 'Montserrat', sans-serif;
@@ -186,29 +189,18 @@
                           {{ username }}
                         </p>
                         <p
+                          class="sm-leading-32"
                           style="
                             font-family: 'Montserrat', sans-serif;
                             mso-line-height-rule: exactly;
                             margin: 0;
-                            margin-bottom: 24px;
+                            margin-bottom: 16px;
+                            font-size: 24px;
+                            font-weight: 600;
+                            color: #263238;
                           "
                         >
-                          A request to reset password was received from your
-                          <span style="font-weight: 600">PixInvent</span>
-                          Account -
-                          <a
-                            href="mailto:john@example.com"
-                            class="hover-underline"
-                            style="
-                              font-family: 'Montserrat', sans-serif;
-                              mso-line-height-rule: exactly;
-                              color: #7367f0;
-                              text-decoration: none;
-                            "
-                            >john@example.com</a
-                          >
-                          (ID: 8632698) from the IP -
-                          <span style="font-weight: 600">49.34.185.199</span> .
+                          Thanks for signing up! 👋
                         </p>
                         <p
                           style="
@@ -218,10 +210,34 @@
                             margin-bottom: 24px;
                           "
                         >
-                          Use this link to reset your password and login.
+                          Please verify your email address by clicking the below
+                          button and join our creative community, start
+                          exploring the resources or showcasing your work.
+                        </p>
+                        <p
+                          style="
+                            font-family: 'Montserrat', sans-serif;
+                            mso-line-height-rule: exactly;
+                            margin: 0;
+                            margin-bottom: 24px;
+                          "
+                        >
+                          If you did not sign up to Codeintelli, please ignore
+                          this email or contact us at
+                          <a
+                            href="mailto:helpdesk.codeintelli@gmail.com"
+                            class="hover-underline"
+                            style="
+                              font-family: 'Montserrat', sans-serif;
+                              mso-line-height-rule: exactly;
+                              color: #7367f0;
+                              text-decoration: none;
+                            "
+                            >helpdesk.codeintelli@gmail.com</a
+                          >
                         </p>
                         <a
-                          href="https://pixinvent.com?reset_password_url"
+                          href="{{url}}"
                           style="
                             font-family: 'Montserrat', sans-serif;
                             mso-line-height-rule: exactly;
@@ -232,7 +248,7 @@
                             color: #7367f0;
                             text-decoration: none;
                           "
-                          >https://pixinvent.com?reset_password_url</a
+                          >{{url}}</a
                         >
                         <table
                           cellpadding="0"
@@ -251,7 +267,7 @@
                               "
                             >
                               <a
-                                href="https://pixinvent.com?reset_password_url"
+                                href="{{url}}"
                                 style="
                                   font-family: 'Montserrat', sans-serif;
                                   mso-line-height-rule: exactly;
@@ -266,46 +282,11 @@
                                   color: #ffffff;
                                   text-decoration: none;
                                 "
-                                >Reset Password &rarr;</a
+                                >Verify Email Now &rarr;</a
                               >
                             </td>
                           </tr>
                         </table>
-                        <p
-                          style="
-                            font-family: 'Montserrat', sans-serif;
-                            mso-line-height-rule: exactly;
-                            margin: 0;
-                            margin-top: 24px;
-                            margin-bottom: 24px;
-                          "
-                        >
-                          <span style="font-weight: 600">Note:</span> This link
-                          is valid for 1 hour from the time it was sent to you
-                          and can be used to change your password only once.
-                        </p>
-                        <p
-                          style="
-                            font-family: 'Montserrat', sans-serif;
-                            mso-line-height-rule: exactly;
-                            margin: 0;
-                          "
-                        >
-                          If you did not intend to deactivate your account or
-                          need our help keeping the account, please contact us
-                          at
-                          <a
-                            href="mailto:support@example.com"
-                            class="hover-underline"
-                            style="
-                              font-family: 'Montserrat', sans-serif;
-                              mso-line-height-rule: exactly;
-                              color: #7367f0;
-                              text-decoration: none;
-                            "
-                            >support@example.com</a
-                          >
-                        </p>
                         <table
                           style="width: 100%"
                           cellpadding="0"
@@ -343,9 +324,11 @@
                             margin-bottom: 16px;
                           "
                         >
-                          Not sure why you received this email? Please
+                          You have reveived this email because you have recently
+                          register your account in Codeintelli. If you don't
+                          register your account then
                           <a
-                            href="mailto:support@example.com"
+                            href="mailto:helpdesk.codeintelli@gmail.com"
                             class="hover-underline"
                             style="
                               font-family: 'Montserrat', sans-serif;
@@ -364,7 +347,7 @@
                             margin-bottom: 16px;
                           "
                         >
-                          Thanks, <br />The PixInvent Team
+                          Thanks, <br />Codeintelli Team
                         </p>
                       </td>
                     </tr>
@@ -377,124 +360,7 @@
                         "
                       ></td>
                     </tr>
-                    <tr>
-                      <td
-                        style="
-                          mso-line-height-rule: exactly;
-                          padding-left: 48px;
-                          padding-right: 48px;
-                          font-family: Montserrat, -apple-system, 'Segoe UI',
-                            sans-serif;
-                          font-size: 14px;
-                          color: #eceff1;
-                        "
-                      >
-                        <p
-                          align="center"
-                          style="
-                            font-family: 'Montserrat', sans-serif;
-                            mso-line-height-rule: exactly;
-                            margin-bottom: 16px;
-                            cursor: default;
-                          "
-                        >
-                          <a
-                            href="https://www.facebook.com/pixinvents"
-                            style="
-                              font-family: 'Montserrat', sans-serif;
-                              mso-line-height-rule: exactly;
-                              color: #263238;
-                              text-decoration: none;
-                            "
-                            ><img
-                              src="images/facebook.png"
-                              width="17"
-                              alt="Facebook"
-                              style="
-                                max-width: 100%;
-                                vertical-align: middle;
-                                line-height: 100%;
-                                border: 0;
-                                margin-right: 12px;
-                              "
-                          /></a>
-                          &bull;
-                          <a
-                            href="https://twitter.com/pixinvents"
-                            style="
-                              font-family: 'Montserrat', sans-serif;
-                              mso-line-height-rule: exactly;
-                              color: #263238;
-                              text-decoration: none;
-                            "
-                            ><img
-                              src="images/twitter.png"
-                              width="17"
-                              alt="Twitter"
-                              style="
-                                max-width: 100%;
-                                vertical-align: middle;
-                                line-height: 100%;
-                                border: 0;
-                                margin-right: 12px;
-                              "
-                          /></a>
-                          &bull;
-                          <a
-                            href="https://www.instagram.com/pixinvents"
-                            style="
-                              font-family: 'Montserrat', sans-serif;
-                              mso-line-height-rule: exactly;
-                              color: #263238;
-                              text-decoration: none;
-                            "
-                            ><img
-                              src="images/instagram.png"
-                              width="17"
-                              alt="Instagram"
-                              style="
-                                max-width: 100%;
-                                vertical-align: middle;
-                                line-height: 100%;
-                                border: 0;
-                                margin-right: 12px;
-                              "
-                          /></a>
-                        </p>
-                        <p
-                          style="
-                            font-family: 'Montserrat', sans-serif;
-                            mso-line-height-rule: exactly;
-                            color: #263238;
-                          "
-                        >
-                          Use of our service and website is subject to our
-                          <a
-                            href="https://pixinvent.com/"
-                            class="hover-underline"
-                            style="
-                              font-family: 'Montserrat', sans-serif;
-                              mso-line-height-rule: exactly;
-                              color: #7367f0;
-                              text-decoration: none;
-                            "
-                            >Terms of Use</a
-                          >
-                          and
-                          <a
-                            href="https://pixinvent.com/"
-                            class="hover-underline"
-                            style="
-                              font-family: 'Montserrat', sans-serif;
-                              mso-line-height-rule: exactly;
-                              color: #7367f0;
-                              text-decoration: none;
-                            "
-                            >Privacy Policy</a
-                          >.
-                        </p>
-                      </td>
-                    </tr>
+
                     <tr>
                       <td
                         style="
