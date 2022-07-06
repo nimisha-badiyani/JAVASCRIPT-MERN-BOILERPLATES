@@ -165,12 +165,19 @@ const UserController = {
         );
       }
 
-      let message = `Someone Is Login From Your Account at User IP:- ${req.socket.remoteAddress} Location:"User Location Here" ${user.userLocation}`;
-
+      // let message = `Someone Is Login From Your Account at User IP:- ${req.socket.remoteAddress} Location:"User Location Here" ${user.userLocation}`;
+      let current = new Date();
+      let currenttimeDate = `${current.toLocaleTimeString()} - ${current.toLocaleDateString()}`;
       const AccountLogin = await SendEmail({
         email: user.email,
-        subject: `Login From Your Account`,
-        message,
+        subject: `Someone Is Login From Your Account`,
+        templateName: "loginAccount",
+        context: {
+          username: user.username,
+          UserIP: `Ip:- ${req.socket.remoteAddress}`,
+          userLocation: `Location:- ${user.userLocation}`,
+          time: currenttimeDate,
+        },
       });
       if (!AccountLogin) {
         return next(
@@ -249,11 +256,29 @@ const UserController = {
     const message = `Your password reset token is:- ${resetPasswordUrl} \n\n If you Don't requested this email then ignore it\n\n `;
 
     try {
-      await SendEmail({
+      let current = new Date();
+      let currenttimeDate = `${current.toLocaleTimeString()} - ${current.toLocaleDateString()}`;
+      const AccountLogin = await SendEmail({
         email: user.email,
-        subject: `Password Recovery Email`,
-        message,
+        subject: `Reset Password Request from ${user.name}`,
+        templateName: "resetPassword",
+        context: {
+          username: user.name,
+          useremail: user.email,
+          userId: user._id,
+          url: resetPasswordUrl,
+          UserIP: `${req.socket.remoteAddress}`,
+          userLocation: `${user.userLocation}`,
+          time: currenttimeDate,
+        },
       });
+      if (!AccountLogin) {
+        return next(
+          ErrorHandler.serverError(
+            "Something Error Occurred Please Try After Some Time"
+          )
+        );
+      }
       res.status(200).json({
         success: true,
         message: `Email sent to ${user.email} successfully`,
@@ -561,15 +586,12 @@ const UserController = {
       if (req.body.profile_img !== undefined && req.body.profile_img !== "") {
         const user = await UserModel.findById(req.user.id);
         const imageId = user.profile_img.public_id;
-        await cloudinary.v2.uploader.destroy(imageId);
-        const myCloud = await cloudinary.v2.uploader.upload(
-          req.body.profile_img,
-          {
-            folder: "profile_imgs",
-            width: 150,
-            crop: "scale",
-          }
+        await Cloudinary.RemoveFile(imageId);
+        const myCloud = await Cloudinary.UploadFile(
+          req.file.path,
+          `${user.id}/profile`
         );
+
         newUserData.profile_img = {
           public_id: myCloud.public_id,
           url: myCloud.secure_url,
