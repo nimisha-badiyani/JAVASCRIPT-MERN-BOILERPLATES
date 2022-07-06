@@ -43,14 +43,14 @@ cloudinary.config({
 
 let server = app.listen(PORT, () => {
   console.log("\n\n\n\n\n");
-  consola.success(`Server Connected ${PORT}`);
+  consola.success(`Server Connected at  http://localhost:${PORT}`);
 });
 
 // * unhandled promise rejection: it occur when we are put incorrect mongodb string in short it accept all mongodb connection errors
 //  * when we are handling this error we dont need to put catch block in database connection file
 process.on("unhandledRejection", (error) => {
   consola.error(
-    `Shutting down the server due to unhandled promise rejection  : ${error.message}`
+    `Shutting down the server due to unhandled promise rejection: ${error.message}`
   );
   server.close(() => {
     process.exit(1);
