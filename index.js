@@ -43,7 +43,7 @@ cloudinary.config({
 
 let server = app.listen(PORT, () => {
   console.log("\n\n\n\n\n");
-  consola.success(`Server Connected at  http://localhost:${PORT}`);
+  consola.success(`Server Connected at http://localhost:${PORT}`);
 });
 
 // * unhandled promise rejection: it occur when we are put incorrect mongodb string in short it accept all mongodb connection errors
