@@ -38,7 +38,7 @@ const UserController = {
         // confirmPassword: Joi.ref("password"),
         // For Custom Message we are using this
         confirmPassword: Joi.string().required(),
-        verified: Joi.boolean().default(true),
+        verified: Joi.boolean().default(false),
         role: Joi.string().default("user"),
         status: Joi.string().default("Active"),
         userIp: Joi.string().default("0.0.0.0"),
@@ -75,7 +75,39 @@ const UserController = {
         password,
         userLocation,
       });
-      SendToken(user, 201, res, "Account Created Successfully");
+      const token = await TokenModel.create({
+        userId: user._id,
+        token: crypto.randomBytes(32).toString("hex"),
+      });
+      const url = `${FRONTEND_URL}/users/${user._id}/verify/${token.token}`;
+
+      // const message = `Your Email Verification token is:- ${url} \n\n If you Don't requested this email then ignore it\n\n `;
+      const sendVerifyMail = await SendEmail({
+        email: user.email,
+        subject: `Email Verification`,
+        templateName: "verifyEmail",
+        context: {
+          username: user.name,
+          url: url,
+        },
+      });
+      if (!sendVerifyMail) {
+        return next(
+          ErrorHandler(
+            "Something Error Occurred Please Try After Some Time",
+            422
+          )
+        );
+      }
+      // SendToken(user, 201, res);
+      res.status(201).json({
+        status: "Pending",
+        code: 201,
+        data: [],
+        message:
+          "An Email send to your account please verify your email address",
+      });
+      // SendToken(user, 201, res, "Account Created Successfully");
     } catch (error) {
       return next(ErrorHandler.serverError(error));
     }
@@ -106,7 +138,13 @@ const UserController = {
       );
       if (!user) {
         return next(
-          new ErrorHandler.wrongCredentials("Invalid Email and password")
+          ErrorHandler.wrongCredentials("Invalid Email and password")
+        );
+      }
+
+      if (!user.verified) {
+        return next(
+          ErrorHandler.unAuthorized("please verify your email address")
         );
       }
 
@@ -128,6 +166,21 @@ const UserController = {
           },
         });
         if (!sendActivateAccountInfo) {
+          return next(
+            ErrorHandler.serverError(
+              "Something Error Occurred Please Try After Some Time"
+            )
+          );
+        }
+        const AccountLogin = await SendEmail({
+          email: user.email,
+          subject: `Reset Password Request from ${user.name}`,
+          templateName: "resetPassword",
+          context: {
+            username: user.name,
+          },
+        });
+        if (!AccountLogin) {
           return next(
             ErrorHandler.serverError(
               "Something Error Occurred Please Try After Some Time"
@@ -189,6 +242,114 @@ const UserController = {
       SendToken(user, 200, res, "Login Successfully");
     } catch (error) {
       return next(ErrorHandler.serverError(error));
+    }
+  },
+
+  // [ + ] VERIFICATION EMAIL LOGIC
+  async verifyEmail(req, res, next) {
+    try {
+      const testId = CheckMongoID(req.params.id);
+      if (!testId) {
+        return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
+      }
+      const user = await UserModel.findOne({ _id: req.params.id });
+
+      if (!user) {
+        return next(ErrorHandler.unAuthorized("Invalid Verification Link"));
+      }
+      if (user.verified) {
+        return next(ErrorHandler.unAuthorized("User Is Already Verified"));
+      }
+
+      const token = await TokenModel.findOne({
+        userId: user._id,
+        token: req.params.token,
+      });
+      if (!token) {
+        return next(ErrorHandler.unAuthorized("Invalid Verification Link"));
+      }
+
+      await UserModel.findByIdAndUpdate(
+        req.params.id,
+        {
+          verified: true,
+        },
+        { new: true, runValidators: true, useFindAndModify: false }
+      );
+      await token.remove();
+      
+
+      const sendVerifyMail = await SendEmail({
+        email: user.email,
+        subject: `Welcome To Codeintelli`,
+        templateName: "welcomeMail",
+        context: {
+          username: user.name,
+        },
+      });
+      if (!sendVerifyMail) {
+        return next(
+          ErrorHandler(
+            "Something Error Occurred Please Try After Some Time",
+            422
+          )
+        );
+      }
+      SuccessHandler(200, [], "Email Verified Successfully", res);
+    } catch (error) {
+      return next(ErrorHandler(error, 500));
+    }
+  },
+
+  async resendVerifyEmail(req, res, next) {
+    try {
+      const testId = CheckMongoID(req.body.id);
+      if (!testId) {
+        return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
+      }
+      const user = await UserModel.findById(req.body.id);
+      if (user.verified) {
+        return next(ErrorHandler.unAuthorized("User Is Already Verified"));
+      }
+      const tokenremove = await TokenModel.find({ userId: user._id });
+
+      if (tokenremove) {
+        tokenremove.map(async (data) => {
+          return await TokenModel.findByIdAndDelete(data._id);
+        });
+      }
+      const token = await TokenModel.create({
+        userId: user._id,
+        token: crypto.randomBytes(32).toString("hex"),
+      });
+      const url = `${FRONTEND_URL}/users/${user._id}/verify/${token.token}`;
+
+      // const message = `Your Email Verification token is:- ${url} \n\n If you Don't requested this email then ignore it\n\n `;
+      const sendVerifyMail = await SendEmail({
+        email: user.email,
+        subject: `Email Verification`,
+        templateName: "verifyEmail",
+        context: {
+          username: user.name,
+          url: url,
+        },
+      });
+      if (!sendVerifyMail) {
+        return next(
+          ErrorHandler.serverError(
+            "Something Error Occurred Please Try After Some Time"
+          )
+        );
+      }
+      // SendToken(user, 201, res);
+      res.status(201).json({
+        status: true,
+        code: 200,
+        data: [],
+        message: "Mail Resend Successfully",
+      });
+    } catch (err) {
+      next(ErrorHandler.serverError(err));
     }
   },
 
@@ -326,7 +487,7 @@ const UserController = {
         resetPasswordToken,
         resetPasswordExpire: { $gt: Date.now() },
       }).select("+password");
-      console.log(user);
+      // console.log(user);
       if (!user) {
         return next(
           ErrorHandler.wrongCredentials(
@@ -367,7 +528,7 @@ const UserController = {
       const user = await UserModel.findById(req.user.id);
       if (user.status == "Deactivate") {
         next(
-          new ErrorHandler(
+          ErrorHandler(
             "It Seem's You have deleted Your Account Please Check Your Mail For More Details",
             422
           )
@@ -465,7 +626,7 @@ const UserController = {
 
       if (!user) {
         return next(
-          new ErrorHandler(`User does not exist with Id: ${req.params.id}`)
+          ErrorHandler(`User does not exist with Id: ${req.params.id}`)
         );
       }
 
@@ -511,14 +672,14 @@ const UserController = {
       };
       const userData = await UserModel.findById(req.params.id);
       if (userData.name !== req.body.name) {
-        return next(new ErrorHandler("You Can't Change The User Name", 400));
+        return next(ErrorHandler("You Can't Change The User Name", 400));
       }
       if (userData.email !== req.body.email) {
-        return next(new ErrorHandler("You Can't Change The User Email", 400));
+        return next(ErrorHandler("You Can't Change The User Email", 400));
       }
       if (userData.status != "Active") {
         return next(
-          new ErrorHandler(
+          ErrorHandler(
             "This user is not active user, you only change the active user role",
             400
           )
@@ -526,7 +687,7 @@ const UserController = {
       }
       if (userData.role == req.body.role) {
         return next(
-          new ErrorHandler(
+          ErrorHandler(
             "It's Seems Like You Are Not Changing the User Role",
             400
           )
@@ -576,7 +737,7 @@ const UserController = {
           email: req.body.email,
         });
         if (userEmailCheck) {
-          return next(new ErrorHandler("This email is already taken", 409));
+          return next(ErrorHandler("This email is already taken", 409));
         }
       }
       const newUserData = {
@@ -622,7 +783,7 @@ const UserController = {
 
       if (!user) {
         return next(
-          new ErrorHandler(`User does not exist with Id: ${req.user.id}`, 400)
+          ErrorHandler(`User does not exist with Id: ${req.user.id}`, 400)
         );
       }
 
@@ -650,7 +811,7 @@ const UserController = {
       });
       if (!afterDeleteMail) {
         return next(
-          new ErrorHandler(
+          ErrorHandler(
             "Something Error Occurred Please Try After Some Time",
             422
           )
@@ -717,7 +878,7 @@ const UserController = {
       const user = await UserModel.findById(req.params.id);
       if (!user) {
         return next(
-          new ErrorHandler(`User does not exist with Id: ${req.params.id}`, 400)
+          ErrorHandler(`User does not exist with Id: ${req.params.id}`, 400)
         );
       }
 
