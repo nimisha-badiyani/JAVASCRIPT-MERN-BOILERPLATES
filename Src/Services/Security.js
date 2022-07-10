@@ -8,7 +8,7 @@ const Security = {
   async Decrypt(receiveData) {
     var dec = RNCryptor.Decrypt(receiveData, ENC_DEC_KEY);
     const receiveSecureData = JSON.parse(dec);
-    console.log("receiveSecureData", receiveSecureData);
+    // console.log("receiveSecureData", receiveSecureData);
     return receiveSecureData;
   },
 };

@@ -26,27 +26,23 @@ const UserSchema = new mongoose.Schema({
   profile_img: {
     fileName: {
       type: String,
-      required: true,
     },
     fileSize: {
       type: String,
-      required: true,
     },
     public_id: {
       type: String,
-      required: true,
       default: "userImage/tzsmxrevyes1xsuyujlk",
     },
     url: {
       type: String,
-      required: true,
       default:
         "https://res.cloudinary.com/dm3gs2s0h/image/upload/v1650136405/userImage/tzsmxrevyes1xsuyujlk.png",
     },
   },
   verified: {
     type: Boolean,
-    default: true,
+    default: false,
   },
   role: {
     type: String,

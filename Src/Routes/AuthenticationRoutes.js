@@ -5,7 +5,12 @@ import { Upload } from "../Middleware";
 
 // [ + ] User Routes
 AuthenticationRoutes.post("/register", UserController.registerUser);
+AuthenticationRoutes.post(
+  "/users/:id/verify/:token",
+  UserController.verifyEmail
+);
 AuthenticationRoutes.post("/login", UserController.login);
+AuthenticationRoutes.post("/resendVerifyEmail", UserController.resendVerifyEmail);
 AuthenticationRoutes.post("/password/forgot", UserController.forgotPassword);
 AuthenticationRoutes.put(
   "/password/reset/:token",

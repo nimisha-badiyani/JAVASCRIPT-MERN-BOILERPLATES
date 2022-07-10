@@ -31,7 +31,7 @@ UserRoutes.put(
 );
 
 UserRoutes.put(
-  "/edit_profile",
+  "/edit_profile/:id",
   AuthenticationMiddleware,
   Upload.single("profile_img"),
   UserController.editUserprofile

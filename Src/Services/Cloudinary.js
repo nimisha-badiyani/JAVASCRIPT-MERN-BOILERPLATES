@@ -8,7 +8,7 @@ const Cloudinary = {
     });
     fs.unlink(file, (err) => {
       if (err) throw err;
-      console.log(`${file} was deleted`);
+      // console.log(`${file} was deleted`);
     });
     return {
       public_id: myCloud.public_id,
