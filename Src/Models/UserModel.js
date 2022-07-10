@@ -23,6 +23,10 @@ const UserSchema = new mongoose.Schema({
     minLength: [4, "Password should not be greater than 4 characters"],
     select: false,
   },
+  mobileNumber: {
+    type: Number,
+    required: [true, "Please Enter Your Mobile Number"],
+  },
   profile_img: {
     fileName: {
       type: String,

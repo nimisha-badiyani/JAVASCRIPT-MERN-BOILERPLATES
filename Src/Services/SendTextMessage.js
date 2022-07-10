@@ -20,29 +20,53 @@
 // nexmo
 // import Vonage from "@vonage/server-sdk";
 // import { VONAGE_API_KEY, VONAGE_API_SECRET } from "../../Config";
-const SendTextMessage = () => {
-  //   VONAGE_API_KEY;
-  //   VONAGE_API_SECRET;
-  //   const vonage = new Vonage({
-  //     apiKey: VONAGE_API_KEY,
-  //     apiSecret: VONAGE_API_SECRET,
-  //   });
-  //   const from = "Vonage APIs";
-  //   const to = "917698983441";
-  //   const text = "A text message sent using the Vonage SMS API";
-  //   vonage.message.sendSms(from, to, text, (err, responseData) => {
-  //     if (err) {
-  //       console.log(err);
-  //     } else {
-  //       if (responseData.messages[0]["status"] === "0") {
-  //         console.log("Message sent successfully.");
-  //       } else {
-  //         console.log(
-  //           `Message failed with error: ${responseData.messages[0]["error-text"]}`
-  //         );
-  //       }
-  //     }
-  //   });
+// const SendTextMessage = () => {
+//   VONAGE_API_KEY;
+//   VONAGE_API_SECRET;
+//   const vonage = new Vonage({
+//     apiKey: VONAGE_API_KEY,
+//     apiSecret: VONAGE_API_SECRET,
+//   });
+//   const from = "Vonage APIs";
+//   const to = "917698983441";
+//   const text = "A text message sent using the Vonage SMS API";
+//   vonage.message.sendSms(from, to, text, (err, responseData) => {
+//     if (err) {
+//       console.log(err);
+//     } else {
+//       if (responseData.messages[0]["status"] === "0") {
+//         console.log("Message sent successfully.");
+//       } else {
+//         console.log(
+//           `Message failed with error: ${responseData.messages[0]["error-text"]}`
+//         );
+//       }
+//     }
+//   });
+// };
+
+// Twilio Configuration
+import {
+  TWILIO_PHONE_NUMBER,
+  TWILIO_AUTH_SID,
+  TWILIO_AUTH_TOKEN,
+} from "../../Config";
+import consola from "consola";
+let twilio = require("twilio")(TWILIO_AUTH_SID, TWILIO_AUTH_TOKEN);
+
+const SendTextMessage = (messageContext) => {
+  twilio.messages
+    .create({
+      from: TWILIO_PHONE_NUMBER,
+      to: messageContext.phoneNumber,
+      body: messageContext.message,
+    })
+    .then((res) => {
+      consola.success("message Sent");
+    })
+    .catch((err) => {
+      consola.error(err);
+    });
 };
 
 export default SendTextMessage;

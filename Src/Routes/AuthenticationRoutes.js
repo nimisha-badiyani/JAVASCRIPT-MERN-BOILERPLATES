@@ -5,12 +5,9 @@ import { Upload } from "../Middleware";
 
 // [ + ] User Routes
 AuthenticationRoutes.post("/register", UserController.registerUser);
-AuthenticationRoutes.post("/users/verify", UserController.verifyEmail);
+AuthenticationRoutes.post("/users/verify", UserController.verifyPhone);
 AuthenticationRoutes.post("/login", UserController.login);
-AuthenticationRoutes.post(
-  "/resendVerifyEmail",
-  UserController.resendVerifyEmail
-);
+AuthenticationRoutes.post("/resendVerifyOTP", UserController.resendVerifyOTP);
 AuthenticationRoutes.post("/password/forgot", UserController.forgotPassword);
 AuthenticationRoutes.put(
   "/password/reset/:token",

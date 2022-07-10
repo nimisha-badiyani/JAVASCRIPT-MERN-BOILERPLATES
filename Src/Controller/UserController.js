@@ -39,6 +39,7 @@ const UserController = {
         // confirmPassword: Joi.ref("password"),
         // For Custom Message we are using this
         confirmPassword: Joi.string().required(),
+        mobileNumber: Joi.number().required(),
         verified: Joi.boolean().default(false),
         role: Joi.string().default("user"),
         status: Joi.string().default("Active"),
@@ -50,7 +51,14 @@ const UserController = {
       if (error) {
         return next(error);
       }
-      let { name, email, password, confirmPassword, userLocation } = req.body;
+      let {
+        name,
+        email,
+        password,
+        confirmPassword,
+        mobileNumber,
+        userLocation,
+      } = req.body;
 
       if (req.body.password) {
         if (req.body.password !== req.body.confirmPassword) {
@@ -73,6 +81,7 @@ const UserController = {
       let user = await UserModel.create({
         name,
         email,
+        mobileNumber,
         password,
         userLocation,
       });
@@ -81,29 +90,36 @@ const UserController = {
         otp: await GenerateOTP(),
       });
 
-      const sendVerifyMail = await SendEmail({
-        email: user.email,
-        subject: `Email Verification OTP`,
-        templateName: "verifyEmailOTP",
-        context: {
-          username: user.name,
-          otp: token.otp,
-        },
+      // const sendVerifyMail = await SendEmail({
+      //   email: user.email,
+      //   subject: `Email Verification OTP`,
+      //   templateName: "verifyEmailOTP",
+      //   context: {
+      //     username: user.name,
+      //     otp: token.otp,
+      //   },
+      // });
+      // if (!sendVerifyMail) {
+      //   return next(
+      //     ErrorHandler.serverError(
+      //       "Something Error Occurred Please Try After Some Time"
+      //     )
+      //   );
+      // }
+
+      const sendMessage = await SendTextMessage({
+        phoneNumber: user.mobileNumber.toString().includes("+91")
+          ? `${user.mobileNumber}`
+          : `+91${user.mobileNumber}`,
+        message: `Please verify your Mobile Number by Using the following OTP ${token.otp} to complete your Sign Up procedures. OTP is valid for 20 minutes.`,
       });
-      if (!sendVerifyMail) {
-        return next(
-          ErrorHandler.serverError(
-            "Something Error Occurred Please Try After Some Time"
-          )
-        );
-      }
       // SendToken(user, 201, res);
       res.status(201).json({
         status: "Pending",
         code: 201,
         data: user,
         message:
-          "An Email send to your account please verify your email address",
+          "A Text Message send to your account please verify your Mobile Number",
       });
       // SendToken(user, 201, res, "Account Created Successfully");
     } catch (error) {
@@ -244,7 +260,7 @@ const UserController = {
   },
 
   // [ + ] VERIFICATION EMAIL LOGIC
-  async verifyEmail(req, res, next) {
+  async verifyPhone(req, res, next) {
     try {
       const testId = CheckMongoID(req.body.id);
       if (!testId) {
@@ -298,7 +314,7 @@ const UserController = {
     }
   },
 
-  async resendVerifyEmail(req, res, next) {
+  async resendVerifyOTP(req, res, next) {
     try {
       const testId = CheckMongoID(req.body.id);
       if (!testId) {
@@ -320,28 +336,18 @@ const UserController = {
         otp: await GenerateOTP(),
       });
 
-      const sendVerifyMail = await SendEmail({
-        email: user.email,
-        subject: `Email Verification OTP`,
-        templateName: "verifyEmailOTP",
-        context: {
-          username: user.name,
-          otp: token.otp,
-        },
+      const sendMessage = await SendTextMessage({
+        phoneNumber: user.mobileNumber.toString().includes("+91")
+          ? `${user.mobileNumber}`
+          : `+91${user.mobileNumber}`,
+        message: `Please verify your Mobile Number by Using the following OTP ${token.otp} to complete your Sign Up procedures. OTP is valid for 20 minutes.`,
       });
-      if (!sendVerifyMail) {
-        return next(
-          ErrorHandler.serverError(
-            "Something Error Occurred Please Try After Some Time"
-          )
-        );
-      }
       // SendToken(user, 201, res);
       res.status(201).json({
         status: true,
         code: 200,
         data: [],
-        message: "Mail Resend Successfully",
+        message: "OTP Resend Successfully",
       });
     } catch (err) {
       next(ErrorHandler.serverError(err));

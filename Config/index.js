@@ -25,4 +25,7 @@ export const {
   ENC_DEC_KEY,
   VONAGE_API_KEY,
   VONAGE_API_SECRET,
+  TWILIO_PHONE_NUMBER,
+  TWILIO_AUTH_SID,
+  TWILIO_AUTH_TOKEN,
 } = process.env;
