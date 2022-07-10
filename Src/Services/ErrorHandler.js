@@ -14,10 +14,12 @@ class ErrorHandler extends Error {
     consola.error(message);
     return new ErrorHandler(404, message);
   }
-
-  static wrongCredentials(message) {
+  static Restricted(message = "You Can't Change This Field") {
     consola.error(message);
-    return new ErrorHandler(401, (message = "username or password is wrong"));
+    return new ErrorHandler(400, message);
+  }
+  static wrongCredentials(message = "username or password is wrong") {
+    return new ErrorHandler(401, message);
   }
   // default message or value given to function
   static unAuthorized(message = "unAuthorized") {

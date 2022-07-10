@@ -8,6 +8,6 @@ const GenerateOTP = (length, config) => {
   };
   const result = otpGenerator.generate(length || 3, config || otpConfig);
   const result2 = otpGenerator.generate(length || 3, config || otpConfig);
-  return `${result} ${result2}`;
+  return `${result}${result2}`;
 };
 export default GenerateOTP;
