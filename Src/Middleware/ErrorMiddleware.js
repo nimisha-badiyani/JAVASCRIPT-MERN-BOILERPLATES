@@ -15,6 +15,7 @@ const ErrorMiddleware = (err, req, res, next) => {
 
   //   it only tell us the object we can get is of what object or class
   if (err instanceof ValidationError) {
+    console.log("This Error Occured")
     statusCode = 422;
     errdata = {
       success: false,

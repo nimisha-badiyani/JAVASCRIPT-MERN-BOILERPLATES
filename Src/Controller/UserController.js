@@ -74,6 +74,7 @@ const UserController = {
         email,
         password,
         userLocation,
+        
       });
       SendToken(user, 201, res, "Account Created Successfully");
     } catch (error) {

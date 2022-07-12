@@ -26,11 +26,9 @@ const UserSchema = new mongoose.Schema({
   profile_img: {
     fileName: {
       type: String,
-      required: true,
     },
     fileSize: {
       type: String,
-      required: true,
     },
     public_id: {
       type: String,
