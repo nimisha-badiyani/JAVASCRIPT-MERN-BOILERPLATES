@@ -1,4 +1,4 @@
-require("dotenv").config({ path: "./config.env" });
+require("dotenv").config({ path: "./Config.env" });
 // All Config.env Variables will be called here. This will be create just because you dont have to need call all time process.env.variables. Many time this will not working For that reason this will benifical.
 export const {
   PORT,

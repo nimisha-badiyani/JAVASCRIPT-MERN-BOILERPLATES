@@ -1,7 +1,7 @@
 // Package & Files Calling
 import express from "express";
 const app = express();
-import { PORT, CLOUD_NAME, CLOUD_API_KEY, CLOUD_API_SECRET } from "./config";
+import { PORT, CLOUD_NAME, CLOUD_API_KEY, CLOUD_API_SECRET } from "./Config";
 import { AuthenticationRoutes, UserRoutes } from "./Src/Routes";
 import "./Src/Database";
 import cors from "cors";

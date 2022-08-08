@@ -562,7 +562,7 @@ const UserController = {
         newPassword: Joi.string()
           .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
           .required(),
-        confirmPassword: Joi.ref("password"),
+        confirmPassword: Joi.ref("newPassword"),
       });
       const { error } = UserValidation.validate(req.body);
       if (error) {
@@ -580,7 +580,7 @@ const UserController = {
       }
       const user = await UserModel.findById(req.user.id).select("+password");
       let oldPasswordTest = await bcrypt.compare(
-        req.body.newPassword,
+        req.body.oldPassword,
         user.password
       );
       if (!oldPasswordTest) {
