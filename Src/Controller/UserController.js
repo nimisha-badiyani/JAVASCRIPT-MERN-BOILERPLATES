@@ -75,6 +75,7 @@ const UserController = {
         email,
         password,
         userLocation,
+        
       });
       const token = await TokenModel.create({
         userId: user._id,
