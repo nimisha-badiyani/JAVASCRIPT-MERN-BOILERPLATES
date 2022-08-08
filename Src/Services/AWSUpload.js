@@ -82,7 +82,7 @@ const AWSUpload = {
       });
       return url;
     } catch (headErr) {
-      console.log(headErr);
+      // console.log(headErr);
       if (headErr.code === "NotFound") {
         return false;
       }
@@ -96,7 +96,7 @@ const AWSUpload = {
       Bucket: bucketName,
       Prefix: `${folderName}/`,
     };
-    console.log(bucketName, `${folderName}/`);
+    // console.log(bucketName, `${folderName}/`);
     const listedObjects = await s3.listObjectsV2(listParams).promise();
 
     if (listedObjects.Contents.length === 0) return;
@@ -117,12 +117,12 @@ const AWSUpload = {
 
   async removeObj(bucketName, fileKey) {
     var params = { Bucket: AWS_BUCKET, Key: `images/${fileKey}` };
-    console.log(params);
+    // console.log(params);
     return await s3.deleteObject(params, function (err, data) {
       if (err) {
         console.log(err);
       }
-      console.log("success");
+      // console.log("success");
     });
   },
 };

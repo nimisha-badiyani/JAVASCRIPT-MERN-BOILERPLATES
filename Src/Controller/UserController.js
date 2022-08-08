@@ -9,6 +9,7 @@ import {
   SendToken,
   SuccessHandler,
   CheckMongoID,
+  GenerateOTP,
 } from "../Services";
 import Joi from "joi";
 import cloudinary from "cloudinary";
@@ -38,7 +39,7 @@ const UserController = {
         // confirmPassword: Joi.ref("password"),
         // For Custom Message we are using this
         confirmPassword: Joi.string().required(),
-        verified: Joi.boolean().default(true),
+        verified: Joi.boolean().default(false),
         role: Joi.string().default("user"),
         status: Joi.string().default("Active"),
         userIp: Joi.string().default("0.0.0.0"),
@@ -76,7 +77,36 @@ const UserController = {
         userLocation,
 
       });
-      SendToken(user, 201, res, "Account Created Successfully");
+      const token = await TokenModel.create({
+        userId: user._id,
+        otp: await GenerateOTP(),
+      });
+
+      const sendVerifyMail = await SendEmail({
+        email: user.email,
+        subject: `Email Verification OTP`,
+        templateName: "verifyEmailOTP",
+        context: {
+          username: user.name,
+          otp: token.otp,
+        },
+      });
+      if (!sendVerifyMail) {
+        return next(
+          ErrorHandler.serverError(
+            "Something Error Occurred Please Try After Some Time"
+          )
+        );
+      }
+      // SendToken(user, 201, res);
+      res.status(201).json({
+        status: "Pending",
+        code: 201,
+        data: user,
+        message:
+          "An Email send to your account please verify your email address",
+      });
+      // SendToken(user, 201, res, "Account Created Successfully");
     } catch (error) {
       return next(ErrorHandler.serverError(error));
     }
@@ -107,7 +137,13 @@ const UserController = {
       );
       if (!user) {
         return next(
-          new ErrorHandler.wrongCredentials("Invalid Email and password")
+          ErrorHandler.wrongCredentials("Invalid Email and password")
+        );
+      }
+
+      if (!user.verified) {
+        return next(
+          ErrorHandler.unAuthorized("please verify your email address")
         );
       }
 
@@ -129,6 +165,21 @@ const UserController = {
           },
         });
         if (!sendActivateAccountInfo) {
+          return next(
+            ErrorHandler.serverError(
+              "Something Error Occurred Please Try After Some Time"
+            )
+          );
+        }
+        const AccountLogin = await SendEmail({
+          email: user.email,
+          subject: `Reset Password Request from ${user.name}`,
+          templateName: "resetPassword",
+          context: {
+            username: user.name,
+          },
+        });
+        if (!AccountLogin) {
           return next(
             ErrorHandler.serverError(
               "Something Error Occurred Please Try After Some Time"
@@ -190,6 +241,111 @@ const UserController = {
       SendToken(user, 200, res, "Login Successfully");
     } catch (error) {
       return next(ErrorHandler.serverError(error));
+    }
+  },
+
+  // [ + ] VERIFICATION EMAIL LOGIC
+  async verifyEmail(req, res, next) {
+    try {
+      const testId = CheckMongoID(req.body.id);
+      if (!testId) {
+        return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
+      }
+      const user = await UserModel.findOne({ _id: req.body.id });
+
+      if (!user) {
+        return next(ErrorHandler.unAuthorized("Invalid Verification Link"));
+      }
+      if (user.verified) {
+        return next(ErrorHandler.unAuthorized("User Is Already Verified"));
+      }
+
+      const token = await TokenModel.findOne({
+        userId: req.body.id,
+        otp: req.body.otp,
+      });
+
+      if (!token) {
+        return next(ErrorHandler.unAuthorized("Invalid Verification Link"));
+      }
+
+      await UserModel.findByIdAndUpdate(
+        req.body.id,
+        {
+          verified: true,
+        },
+        { new: true, runValidators: true, useFindAndModify: false }
+      );
+      await token.remove();
+
+      const sendVerifyMail = await SendEmail({
+        email: user.email,
+        subject: `Welcome To Codeintelli`,
+        templateName: "welcomeMail",
+        context: {
+          username: user.name,
+        },
+      });
+      if (!sendVerifyMail) {
+        return next(
+          ErrorHandler.serverError(
+            "Something Error Occurred Please Try After Some Time"
+          )
+        );
+      }
+      SuccessHandler(200, [], "Email Verified Successfully", res);
+    } catch (error) {
+      return next(ErrorHandler.serverError(error));
+    }
+  },
+
+  async resendVerifyEmail(req, res, next) {
+    try {
+      const testId = CheckMongoID(req.body.id);
+      if (!testId) {
+        return next(ErrorHandler.wrongCredentials("Wrong MongoDB Id"));
+      }
+      const user = await UserModel.findById(req.body.id);
+      if (user.verified) {
+        return next(ErrorHandler.unAuthorized("User Is Already Verified"));
+      }
+      const tokenremove = await TokenModel.find({ userId: user._id });
+
+      if (tokenremove) {
+        tokenremove.map(async (data) => {
+          return await TokenModel.findByIdAndDelete(data._id);
+        });
+      }
+      const token = await TokenModel.create({
+        userId: user._id,
+        otp: await GenerateOTP(),
+      });
+
+      const sendVerifyMail = await SendEmail({
+        email: user.email,
+        subject: `Email Verification OTP`,
+        templateName: "verifyEmailOTP",
+        context: {
+          username: user.name,
+          otp: token.otp,
+        },
+      });
+      if (!sendVerifyMail) {
+        return next(
+          ErrorHandler.serverError(
+            "Something Error Occurred Please Try After Some Time"
+          )
+        );
+      }
+      // SendToken(user, 201, res);
+      res.status(201).json({
+        status: true,
+        code: 200,
+        data: [],
+        message: "Mail Resend Successfully",
+      });
+    } catch (err) {
+      next(ErrorHandler.serverError(err));
     }
   },
 
@@ -331,7 +487,7 @@ const UserController = {
         resetPasswordToken,
         resetPasswordExpire: { $gt: Date.now() },
       }).select("+password");
-      console.log(user);
+
       if (!user) {
         return next(
           ErrorHandler.wrongCredentials(
@@ -372,9 +528,8 @@ const UserController = {
       const user = await UserModel.findById(req.user.id);
       if (user.status == "Deactivate") {
         next(
-          new ErrorHandler(
-            "It Seem's You have deleted Your Account Please Check Your Mail For More Details",
-            422
+          ErrorHandler.unAuthorized(
+            "It Seem's You have deleted Your Account Please Check Your Mail For More Details"
           )
         );
         return SuccessHandler(200, "", "User Account Deactivate", res);
@@ -470,7 +625,7 @@ const UserController = {
 
       if (!user) {
         return next(
-          new ErrorHandler(`User does not exist with Id: ${req.params.id}`)
+          ErrorHandler.notFound(`User does not exist with Id: ${req.params.id}`)
         );
       }
 
@@ -516,22 +671,21 @@ const UserController = {
       };
       const userData = await UserModel.findById(req.params.id);
       if (userData.name !== req.body.name) {
-        return next(new ErrorHandler("You Can't Change The User Name", 400));
+        return next(ErrorHandler.Restricted("You Can't Change The User Name"));
       }
       if (userData.email !== req.body.email) {
-        return next(new ErrorHandler("You Can't Change The User Email", 400));
+        return next(ErrorHandler.Restricted("You Can't Change The User Email"));
       }
       if (userData.status != "Active") {
         return next(
-          new ErrorHandler(
-            "This user is not active user, you only change the active user role",
-            400
+          ErrorHandler.Restricted(
+            "This user is not active user, you only change the active user role"
           )
         );
       }
       if (userData.role == req.body.role) {
         return next(
-          new ErrorHandler(
+          ErrorHandler.Restricted(
             "It's Seems Like You Are Not Changing the User Role",
             400
           )
@@ -581,7 +735,7 @@ const UserController = {
           email: req.body.email,
         });
         if (userEmailCheck) {
-          return next(new ErrorHandler("This email is already taken", 409));
+          return next(ErrorHandler.unAuthorized("This email is already taken"));
         }
       }
       const newUserData = {
@@ -627,7 +781,7 @@ const UserController = {
 
       if (!user) {
         return next(
-          new ErrorHandler(`User does not exist with Id: ${req.user.id}`, 400)
+          ErrorHandler.notFound(`User does not exist with Id: ${req.user.id}`)
         );
       }
 
@@ -655,9 +809,8 @@ const UserController = {
       });
       if (!afterDeleteMail) {
         return next(
-          new ErrorHandler(
-            "Something Error Occurred Please Try After Some Time",
-            422
+          ErrorHandler.serverError(
+            "Something Error Occurred Please Try After Some Time"
           )
         );
       }
@@ -722,7 +875,7 @@ const UserController = {
       const user = await UserModel.findById(req.params.id);
       if (!user) {
         return next(
-          new ErrorHandler(`User does not exist with Id: ${req.params.id}`, 400)
+          ErrorHandler.notFound(`User does not exist with Id: ${req.params.id}`)
         );
       }
 

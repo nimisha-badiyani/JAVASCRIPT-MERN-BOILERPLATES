@@ -6,8 +6,8 @@ const TokenSchema = new mongoose.Schema({
     required: true,
     ref: "user",
   },
-  token: { type: String, required: true },
-  otp: { type: String },
+  token: { type: String },
+  otp: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }, // 20 minutes
   expiresAt: { type: Date, expires: 1200 },
 });

@@ -44,6 +44,7 @@ UserRoutes.get(
   AuthorizationMiddleware("admin"),
   UserController.getAllUserDetails
 );
+
 UserRoutes.get(
   "/admin/user/:id",
   AuthenticationMiddleware,
