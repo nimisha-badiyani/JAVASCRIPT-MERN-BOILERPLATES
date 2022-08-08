@@ -74,7 +74,7 @@ const UserController = {
         email,
         password,
         userLocation,
-        
+
       });
       SendToken(user, 201, res, "Account Created Successfully");
     } catch (error) {
@@ -212,8 +212,12 @@ const UserController = {
   // [ + ] Upload Profile Picture
   async uploadProfileImage(req, res, next) {
     try {
+
       const user = await UserModel.findById(req.user.id);
+      console.log(req.file, "req.file.path");
       req.file.path = req.file.path.replace("\\", "/");
+      console.log(req.file.path, "req.file.path");
+
       let myCloud = await Cloudinary.UploadFile(
         req.file.path,
         `${user.id}/profile`
@@ -408,7 +412,7 @@ const UserController = {
         newPassword: Joi.string()
           .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
           .required(),
-        confirmPassword: Joi.ref("password"),
+        confirmPassword: Joi.ref("newPassword"),
       });
       const { error } = UserValidation.validate(req.body);
       if (error) {
@@ -426,7 +430,7 @@ const UserController = {
       }
       const user = await UserModel.findById(req.user.id).select("+password");
       let oldPasswordTest = await bcrypt.compare(
-        req.body.newPassword,
+        req.body.oldPassword,
         user.password
       );
       if (!oldPasswordTest) {

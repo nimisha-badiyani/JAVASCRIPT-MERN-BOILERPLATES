@@ -7,10 +7,10 @@ var storage = multer.diskStorage({
     cb(
       null,
       file.fieldname +
-        "_" +
-        Date.now() +
-        "." +
-        file.originalname.split(".").pop()
+      "_" +
+      Date.now() +
+      "." +
+      file.originalname.split(".").pop()
     );
   },
 });

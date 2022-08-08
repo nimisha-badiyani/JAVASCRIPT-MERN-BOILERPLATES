@@ -24,20 +24,15 @@ UserRoutes.post(
   Upload.single("profile_img"),
   UserController.uploadProfileImage
 );
-UserRoutes.put(
-  "/changePassword",
-  AuthenticationMiddleware,
-  UserController.changePassword
-);
 
 UserRoutes.put(
-  "/edit_profile",
+  "/edit_profile/:id",
   AuthenticationMiddleware,
   Upload.single("profile_img"),
   UserController.editUserprofile
 );
 UserRoutes.put(
-  "/deactivate",
+  "/deactivate/:id",
   AuthenticationMiddleware,
   UserController.deactivateAccount
 );
